@@ -1,0 +1,13 @@
+# R
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+
+# OSX
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*.lnk
+*~
