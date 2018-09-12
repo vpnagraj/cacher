@@ -2,13 +2,14 @@ library(shiny)
 library(mongolite)
 
 # what is the name of the db for the jobs
-jobdb <- "low"
+db_url <- "mongodb://localhost:27017"
+db_name <- "low"
 
 # where do the caches live?
 cacheDir <- "cache/"
 
 # establish connection to jobdb
-con <- mongo(url = "mongodb://localhost:27017", db=jobdb)
+con <- shinyDepot::connect(db_url = db_url, db_name = db_name)
 
 ui <- fluidPage(
   
@@ -45,9 +46,9 @@ ui <- fluidPage(
 server <- function(input, output, session) {
   
   keyphrase <- eventReactive(input$run, {
-    
-    paste0(sample(c(LETTERS,1:9), 15), collapse = "")
-    
+
+    shinyDepot::hash()
+
   })
   
   result_url <- reactive({
@@ -74,12 +75,7 @@ server <- function(input, output, session) {
     
   })
   
-  query <- reactive({
-    
-    parseQueryString(session$clientData$url_search)
-    
-  })
-  
+  query <- shinyDepot::parse_query()
   
   observeEvent(input$run, {
     
@@ -124,48 +120,8 @@ server <- function(input, output, session) {
     }
   })
   
-  # set  up reactive value object to store values from observer
-  dat <- reactiveValues()
-
-  observe({
-    
-    # is there a query and is it in the job db?
-    if(length(query()) != 0 & any(query() %in% con$find()$id)) {
-      
-      # construct id query string for job db
-      idstr <- paste0("{\"id\":\"", query(), "\"}")
-      
-      # is the job done? 
-      if(con$find(query = idstr)$status == "Completed") {
-        
-        dat$status <- "Completed"
-        
-        # read data
-        dat$rdist <- readRDS(file = paste0(cacheDir, query(), ".rds"))
-        
-        # focus on results tab
-        updateNavbarPage(session, "mainmenu",
-                         selected = "Results")
-        
-        # is the job queued
-      } else if(con$find(query = idstr)$status == "Queued") { 
-        
-        # set result object to "queued
-        dat$status <- "Queued"
-        
-        # force refresh every X seconds
-        invalidateLater(5000, session)
-        
-      }
-      
-      # and if the query is bad ... say so
-    } else if (length(query() != 0)) {
-      
-      dat$bad <- "bad query"
-      
-    }
-    
-  })
+  # retrieve job
+  shinyDepot::retrieve(db_url = db_url, db_name = db_name)
   
   output$distPlot <- renderPlot({
     
@@ -185,7 +141,7 @@ server <- function(input, output, session) {
   
   output$qmessage <- renderText({
     
-    req(dat$status == "Queued")
+    req(dat$status == "Queued" | dat$status == "Running")
     
     dat$status
     

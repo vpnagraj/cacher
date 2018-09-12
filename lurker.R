@@ -4,7 +4,7 @@
 library(mongolite)
 con <- mongo(url = "mongodb://localhost:27017", db = "low")
 
-source("process.R")
+# source("process.R")
 
 running <- TRUE
 
@@ -24,13 +24,18 @@ while(running) {
       # get id json string for updating db
       idstr <- paste0("{\"id\":\"", inprocess$id, "\"}")
       
+      # message
+      message(paste0("running job ", inprocess$id))
+      
       # set status to running
       con$update(idstr,
                  update = '{"$set":{"status":"Running"}}')
       
       # run the process function
-      res <- runit(size = unlist(inprocess$size), 
-                   dist = unlist(inprocess$distribution))
+      # res <- runit(size = unlist(inprocess$size), 
+      #              dist = unlist(inprocess$distribution))
+      
+      source("process.R", local = TRUE)
       
       # create file pointer and save cache
       fp <- paste0("cache/", inprocess$id, ".rds")
