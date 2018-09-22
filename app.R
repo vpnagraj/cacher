@@ -3,13 +3,13 @@ library(mongolite)
 
 # what is the name of the db for the jobs
 db_url <- "mongodb://localhost:27017"
-db_name <- "low"
+db_name <- "low2"
 
 # where do the caches live?
 cacheDir <- "cache/"
 
 # establish connection to jobdb
-con <- shinyDepot::connect(db_url = db_url, db_name = db_name)
+con <- shinyqueue::connect(db_url = db_url, db_name = db_name)
 
 ui <- fluidPage(
   
@@ -47,7 +47,7 @@ server <- function(input, output, session) {
   
   keyphrase <- eventReactive(input$run, {
 
-    shinyDepot::hash()
+    shinyqueue::hash()
 
   })
   
@@ -75,26 +75,14 @@ server <- function(input, output, session) {
     
   })
   
-  query <- shinyDepot::parse_query()
+  query <- shinyqueue::parse_query()
   
   observeEvent(input$run, {
     
-    # get keyphrase generated
-    id <- keyphrase()
-    
-    jobspecs <- 
-      list(
-        id = id,
-        status = "Queued",
-        size = input$size,
-        datapath = list("/tmp/foo/bar/", "/tmp/foo/baz/"),
-        distribution = input$dist,
-        time_queued = Sys.time(),
-        time_run = NA
-      )
-    
-    # insert row in mongodb
-    con$insert(jobspecs)
+    shinyqueue::submit(con, 
+                       job_type = "cacher",
+                       input = input, 
+                       job_id = keyphrase())
     
     # show the message about redirect
     showModal(modalDialog(
@@ -121,29 +109,29 @@ server <- function(input, output, session) {
   })
   
   # retrieve job
-  shinyDepot::retrieve(db_url = db_url, db_name = db_name)
+  shinyqueue::retrieve(con = con)
   
   output$distPlot <- renderPlot({
     
-    req(dat$status == "Completed")
+    req(shinyqueue$status == "Completed")
     
-    hist(dat$rdist)
+    hist(shinyqueue$result)
     
   })
   
   output$badquery <- renderText({
     
-    req(dat$bad)
+    req(shinyqueue$bad)
     
-    dat$bad
+    shinyqueue$bad
     
   })
   
   output$qmessage <- renderText({
     
-    req(dat$status == "Queued" | dat$status == "Running")
+    req(shinyqueue$status == "Queued" | shinyqueue$status == "Running")
     
-    dat$status
+    shinyqueue$status
     
   })
 
