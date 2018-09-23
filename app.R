@@ -6,7 +6,7 @@ db_url <- "mongodb://localhost:27017"
 db_name <- "low2"
 
 # where do the caches live?
-cacheDir <- "cache/"
+cache_dir <- "cache"
 
 # establish connection to jobdb
 con <- shinyqueue::connect(db_url = db_url, db_name = db_name)
@@ -81,6 +81,7 @@ server <- function(input, output, session) {
     
     shinyqueue::submit(con, 
                        job_type = "cacher",
+                       cache_dir = cache_dir,
                        input = input, 
                        job_id = keyphrase())
     
@@ -109,7 +110,7 @@ server <- function(input, output, session) {
   })
   
   # retrieve job
-  shinyqueue::retrieve(con = con)
+  shinyqueue::retrieve(con = con, cache_dir = cache_dir)
   
   output$distPlot <- renderPlot({
     

@@ -36,5 +36,4 @@ cache_it <- function() {
 
 
 shinyqueue::lurk(process = list("cacher" = cache_it()), 
-                 con = con,
-                 cache_dir = cache_dir)
+                 con = con)
