@@ -47,7 +47,7 @@ server <- function(input, output, session) {
   
   keyphrase <- eventReactive(input$run, {
 
-    shinyqueue::hash()
+    shinyqueue::job_hash()
 
   })
   
